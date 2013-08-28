@@ -1,0 +1,151 @@
+* 2013-08-28
+ - Ported to work with INET 2.2. 
+ - Refactored the vlan implementation, and inserted in to the epon project
+
+
+* 0.8 Beta
+ -  Updated INFO and main pages of doxy
+ -  All the new .neds are configured for multi-service environment (Voice/Video/Data)
+ -  Added an extra "NonPollingPon" example scenario (slightly tested)
+ -  BUG Fix on datarateLimit default parameter (no negative values - it is a uint)
+ -  Added simple "PollingPon" scenarion + parameters (slightly tested) 
+ -  New queue OLTQPerLLiDBase_P that implements polling with fixed service
+ -  MPCPTools extended to convert bits to ns16 and vise-versa
+ -  requestMPCP_REPORT and getMPCPRepSize functions added in the ONUQPerLLiDBase
+ 	to create and return a report with the queues status
+ -  ONUMacCtlBase created: Common MAC functions (both polling and non-polling)
+ -  Removed unused syncMsg from ONUMacCtl_NP
+ -	Extended the ONUTable with an extra field (req[8]) which is the bandwidth 
+    request from each ONU (8 queues) 
+ -  The VLAN relays added into the PON project (maps a VLAN to an LLiD)
+ 
+* 0.7 Beta
+ -  VlanNetConfigurator is now able to handle node add/rm, remembering always 
+    the first available IP
+ -  DataRateLimit parameter in pon_queues fixxxed to support zero (0) allocation. 
+    A value of UINT64_MAX is now assigned to indicate unlimited rate. 
+ -  WAKE UP message added again to ONU_Q_MGMT (see 0.5b [+]). It had as result, 
+    to forward all the frames when the Q_mgmt has small load.
+ -	[OLT|ONU]MacCtl are now interfaces and [OLT|ONU]MacCtl_NP is the NON-POLLING 
+    implementation. (to be easily extended with a polling MAC mechanism (DBA1/2, 
+    IPACT, etc...))
+ -  Conversion from par() to uint64_t for DataRateLimit fixed
+ -	Registration Messages are now send directly ONU->OLT to avoid collisions (easilly
+ 	reversable for someone looking into MPCP protocol)
+ -	Bug Fixxed: Before registration, all messages other than MPCP are dropped
+ -	DHCPServer removed from .ned (old garbage)
+ 
+* 0.6 Beta
+ -	Security on ONUTable (to check entries) and Splitter for checking reg. messages
+    collisions
+ -	Probably a bug fix for simulations that run more than 68.72 sec.
+ -	Minor helper functions added to OLT queue mgmt base to calculate super slot times
+ -	Logging the datarateLimit at the end as scalar in order to calculate network load
+    if needed
+ -	Scale down simulation support by adding datarateLimit to OLTQPerLLiDBase
+ -	Copyable Queues now LOG 2 TIMES LESS (checking before logging: in my case 88.1=>41 MB!!!!)
+ -	MRR added in the service config module, used by WiMax
+ -	Logical BUG FIX: Packets with length > length_reg are discarted cause they are blocking
+    all the Qs and they don't fit the allocated. A message is displayed
+ 
+* 0.5 Beta
+ -	QForContainer is now cPacketQueue
+ -	Added "getIndexForService(string)" to get the pon_queue of that service
+ -	BUG FIX: On SLEEP MODE the ONUs could get stuck... That happens ONLY WITH DBA that actually BLOCKs the 
+ 	queues so the MAC layer things they are empty. (Fixed in ONUQPerLLiDBase and ONU_QPL_RR_PHQ)  - It DOES 
+ 	NOT EXIST IN PREVIOUS VERSIONS.
+ -	ONUs with serviceConfig in the scenario register 1 extra LLiD as the Default one (flag added in the queues)
+ -	Copyable Queues now support popNoLogging() to avoid counting bits at pop.
+ -	MSR (Maximum Sustained Rate) per flow added in the ServiceConfig module 
+ -	BUG FIX on recording queue stats (caused by IEponQMgmt removal - It DOES NOT EXIST IN PREVIOUS 
+ 	VERSIONS (neither on this one any more))
+ -  ONU default relay module now discards the ControlInfo
+ -	[+]No wake up messages for MacCtl, a temp. queue is used in the MacCtl module and the real frame 
+ 	wakes the module up.
+ -	IEponQMgmt interface deleted... the queues now implement IPassiveQueue (for compatibility)
+ -	BUG FIX: ONUs do not reschedule their clock on SLEEP state (SLEEP means empty queues)
+ 
+* 0.4 Beta
+ -	Bug fix on start_reg on Round Robin allocation. 
+ 	(NOTE:	length_reg supports 32 bits for simplicity, instead of allocating more than one slots
+ 			with max length 2^16 we allocate one only that goes up to 2^32)
+ -	On WakeUP message from TX_SLEEP BUG FIXED (the result was wrong start_reg time and collisions)
+ -	PON_Splitter HALTS the simulation with error when collisions are more than "haltOn" parameter.  
+ -	SendGateUpdates() changed to parse ONUs bottom-top:
+ 	This reduces the number of collision on the upstream when new MPCP GATES are send. 
+ 	FIXME: The proper way should be to remember the larger RTT and assign time from 
+ 	RTT_max/2 and on...
+ -	Some small parts of documentation added
+ -	EtherMacVlan minor fix to add packet name to the frames transmitted
+ -	MPCP handling fixed on ONUs to support register times in past
+ -	MACCtl fixed to support different behaviours for the first GATE and the rest of them
+ -	pon_queues cOutVector for FramesSent name bug fixed
+ -	Checking LLiD in ONUQPerLLiD.cc is now a different function
+ -	ONUTable: You can now ge the MACAddress object from string (MAC in presentation format)
+ -	On OLT queue the methods getFastestQForMac(...) added (more info on doxy doc).
+ -	Get ONU table entries by string ID now is available
+ -	MPCP GATE/REPORT messages are now added first on the BC or the higher priority queue
+ -	In ONUQPerLLiDBase::checkIfAllEmpty() the function does not touch the nextQindex variable
+ 	This made to clear things up a bit and avoid confusion with the getNextFrame functions
+ -	Real time stats added on the CopyableVectorQueues (incoming data rate). These stuff are
+ 	not logged at the end (used only for real time DBA algorithms or sth)
+ -	NED files cleaned a bit from unused parameters
+ -	Byte Length added to MPCP messages (before was 0)
+ -	Bug fixed on QPerLLiD module. The next message length was _not_ checked, only if the 
+ 	queue was empty was checked. Thus affects some cases where Q is not empty but you don't
+ 	want to Tx the next message (QoS)
+
+* 0.3 Beta
+ -	ONUMacCtl bug fixed: If traffic is low, clock_reg may make 2 or more register shifts.
+ 	Multi Shift added and tested in function "clockSync()"
+ -	ONUMacCtl bug fixed on MPCP receive (no clock sync from the packet...)
+ - 	regTimeInt accuracy fix
+ -	Bug Fixed on EPON_mac de-capsulation for EtherFrameWithLLiD
+ -	Max. Frame length changed in EPON_mac and EtherMacVlan
+ -	Subclasses on EPON queues
+ -	Some tidying was done on the Queue structs (... it was messy code)
+ -	Added Copy-able cOutVector container used whenever we have queues in 
+ 	vectors and we want to log the statistics. 
+ - 	Minor bug in ServiceConfig tk display for the srvs vector
+ -	Fancy display strings...
+ - 	Fixed bug in the vlan encapsulation module. Now vlan type is 
+	added normaly in the frame. 
+ - 	Names added on messages generated from the ONUs/OLT
+ - 	The Queue interface renamed and added (back) to this project
+	The vlans are going to use the default IPassiveQueue since they
+	do not need to know about the next frame size. Also they don't 
+	have to wait for specific time (off state) to be in danger of
+	not keeping the QoS requirements on priority.
+ -	(Small effort to align this file... :-) )	
+
+* 0.2 Beta
+ - 	Project now compiles as dynamic lib.
+ - 	PON_Splitter ports now are set to "passive" by (->setDeliverOnReceptionStart(true))
+	Other way collisions occure on variable length frames... 
+ - 	Fragmented time on ONUs is now logged
+ - 	Fixed Timing Bug in Upstream Round Robin
+ - 	Fixed Timing Bug on ONU stopTx self-message
+ - 	Fixed MacCtl state after MPCP messages
+ - 	Vlans project created (some files moved there)
+ - 	Added vlan bridging info in the ServiceConfig module
+ - 	EPON_Q_mgmt renamed to Multi_Q_mgmt and moved to Vlans project
+ - 	Reimplementation of "startTxOnPON()" to reduce self-messages (increase simtime sec/sec)
+	NOTE: DrawBack: If high prior. queue is empty, the BE will go to MAC. 
+	If a HP frame arrives while in transmission, then it will experience abnormal delay...  
+	(CODE LEFT IN COMMENTS)
+ - 	(KNOWN BUG) ARP with vlans: IP layer must change to include interface name in control info. 
+	ARP Replies are not in the proper vlan.
+
+
+* 0.1 Beta
+ - 	In ONUs and OLTs added the parameter node(); (Thanks to Daniele S.)
+ - 	Documentation added (pure doxy without ned files)
+ - 	Queues are now pluged in and working as Round Robin
+ - 	ServiceConfig parameters are taken under-consideration in the queue's modules
+ - 	MacCtl modules do not have a queue now
+ - 	EPON_Q_mgmt class added for abstraction
+ - 	Many small bugs fixed...
+
+* Alpha
+ - 	Initial test release 
+ - 	MAC and MAC Control seem to work 
